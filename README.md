@@ -24,10 +24,15 @@
 
 1.  **启动 Web 服务**：
     在终端执行以下命令（脚本会自动创建 Python 虚拟环境并安装所需依赖）：
-    ```bash
-    chmod +x start_web.sh
-    ./start_web.sh
-    ```
+    - **macOS/Linux**:
+      ```bash
+      chmod +x start_web.sh
+      ./start_web.sh
+      ```
+    - **Windows**:
+      ```cmd
+      start_web.bat
+      ```
 2.  **访问控制台**：
     在浏览器打开 [**http://127.0.0.1:8000**](http://127.0.0.1:8000) 进入管理面板。
 3.  **开始任务**：
