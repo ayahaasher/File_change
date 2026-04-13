@@ -5,21 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Modifier Pro - Web Engine</title>
     <link rel="stylesheet" href="/static/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
     <aside class="sidebar">
-        <div class="nav-item active" data-tab="dashboard" title="Dashboard">🏠</div>
-        <div class="nav-item" data-tab="history" title="History">📜</div>
-        <div class="nav-item" data-tab="settings" title="Settings">⚙️</div>
+        <div class="nav-item active" data-tab="dashboard" title="Dashboard">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-text">Dashboard</span>
+        </div>
+        <div class="nav-item" data-tab="history" title="History">
+            <span class="nav-icon">📜</span>
+            <span class="nav-text">History</span>
+        </div>
+        <div class="nav-item" data-tab="settings" title="Settings">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">Settings</span>
+        </div>
     </aside>
 
     <main class="main-container">
-        <!-- 1. Dashboard Tab -->
         <section id="tab-dashboard" class="tab-content active">
             <section class="content-left">
                 <h1>File Modifier <span class="badge">PRO v2.8</span></h1>
-                
+
                 <div class="glass-card">
                     <div class="card-title">📂 目标路径 (Target Path)</div>
                     <div class="current-path-bar" id="selected-path-display">未选择任何路径</div>
@@ -84,7 +91,7 @@
                         </div>
                         <input type="text" id="suffix-list" placeholder="例如: doc, docx, pdf" style="margin-top: 10px;">
                     </div>
-                    
+
                     <div class="checkbox-group" style="margin-top: 15px;">
                         <div>
                             <input type="checkbox" id="recursive-check" checked>
@@ -106,7 +113,7 @@
                     <div class="progress-wrapper">
                         <div class="progress-circle" id="progress-val">0%</div>
                     </div>
-                    
+
                     <div class="stat-grid">
                         <div class="stat-item">
                             <div class="stat-label">📄 已重命名</div>
@@ -121,18 +128,17 @@
                             <div class="stat-value" id="stat-total">0 / 0</div>
                         </div>
                     </div>
-                    
+
                     <div class="monitor-footer" id="status-summary">等待指令中...</div>
                 </div>
-                
+
                 <div class="tip-card glass-card">
-                  <div class="card-title">💡 温馨提示</div>
-                  <p style="font-size: 0.8rem; color: var(--text-dim);">详细执行日志已整合至“历史记录”中。您可以点击历史任务的详情按钮进行追溯和审计。</p>
+                    <div class="card-title">💡 温馨提示</div>
+                    <p style="font-size: 0.8rem; color: var(--text-dim);">详细执行日志已整合至“历史记录”中。您可以点击历史任务的详情按钮进行追溯和审计。</p>
                 </div>
             </aside>
         </section>
 
-        <!-- 2. History Tab -->
         <section id="tab-history" class="tab-content">
             <h1>任务历史记录</h1>
             <div class="glass-card" style="margin-top: 20px;">
@@ -151,7 +157,6 @@
             </div>
         </section>
 
-        <!-- 3. Settings Tab -->
         <section id="tab-settings" class="tab-content">
             <h1>全局系统设置</h1>
             <div class="glass-card" style="margin-top: 20px; max-width: 600px;">
@@ -172,16 +177,13 @@
         </section>
     </main>
 
-    <!-- Detailed Log Modal -->
     <div id="log-modal" class="modal-overlay">
         <div class="modal-content glass-card">
             <div class="modal-header">
                 <h2>任务执行详情日志</h2>
                 <button id="close-modal" class="btn-mini">关闭 ×</button>
             </div>
-            <div class="modal-body" id="modal-log-content">
-                <!-- Logs injected here -->
-            </div>
+            <div class="modal-body" id="modal-log-content"></div>
         </div>
     </div>
 
