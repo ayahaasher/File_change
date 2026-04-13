@@ -326,6 +326,38 @@ h1 {
     cursor: pointer;
 }
 
+.settings-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.settings-option {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(29, 29, 31, 0.08);
+    color: var(--text-main);
+    cursor: pointer;
+}
+
+.settings-option span {
+    display: inline;
+}
+
+.settings-option input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--accent-primary);
+    flex: 0 0 auto;
+}
+
 .btn-primary {
     width: 100%;
     background: var(--accent-primary);
@@ -450,6 +482,17 @@ h1 {
 
 .btn-mini:hover {
     background: rgba(0, 113, 227, 0.08);
+}
+
+.btn-mini.btn-details {
+    background: var(--accent-primary) !important;
+    color: #ffffff !important;
+    border-color: var(--accent-primary) !important;
+}
+
+.btn-mini.btn-details:hover {
+    background: #0077ed !important;
+    color: #ffffff !important;
 }
 
 .tip-card p {

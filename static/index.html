@@ -166,10 +166,19 @@
                 </div>
                 <div class="input-group" style="margin-top: 20px;">
                     <label>启动默认行为</label>
-                    <div class="checkbox-group" style="flex-direction: column; align-items: flex-start;">
-                        <div><input type="checkbox" id="set-recursive-default"> <label for="set-recursive-default">默认递归处理</label></div>
-                        <div style="margin-top:10px;"><input type="checkbox" id="set-dryrun-default"> <label for="set-dryrun-default">默认开启预览(Dry Run)</label></div>
-                        <div style="margin-top:10px;"><input type="checkbox" id="set-ignore-hidden"> <label for="set-ignore-hidden">忽略隐藏文件</label></div>
+                    <div class="settings-options">
+                        <label class="settings-option" for="set-recursive-default">
+                            <span>默认递归处理</span>
+                            <input type="checkbox" id="set-recursive-default">
+                        </label>
+                        <label class="settings-option" for="set-dryrun-default">
+                            <span>默认开启预览(Dry Run)</span>
+                            <input type="checkbox" id="set-dryrun-default">
+                        </label>
+                        <label class="settings-option" for="set-ignore-hidden">
+                            <span>忽略隐藏文件</span>
+                            <input type="checkbox" id="set-ignore-hidden">
+                        </label>
                     </div>
                 </div>
                 <button class="btn-primary" id="btn-save-settings" style="margin-top: 30px;">应用全局配置 💾</button>
