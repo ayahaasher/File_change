@@ -35,11 +35,19 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 class RunRequest(BaseModel):
     path: str
     recursive: bool = False
+    
+    # Selective modifications
+    mod_name: bool = True
+    mod_mtime: bool = True
+    mod_atime: bool = False
+    mod_ctime: bool = False
+    
     rename_pattern: Optional[str] = None
     rename_replace: str = ""
     mtime: Optional[str] = None
     atime: Optional[str] = None
     ctime: Optional[str] = None
+    
     include: Optional[str] = None
     exclude: Optional[str] = None
     include_exts: Optional[str] = None
@@ -49,7 +57,7 @@ class RunRequest(BaseModel):
 class Settings(BaseModel):
     default_suffixes: str = "doc, docx, xlsx, csv, xls, pdf"
     recursive_default: bool = True
-    dry_run_default: bool = False  # Changed default to False for user convenience
+    dry_run_default: bool = False
     ignore_hidden: bool = True
 
 def load_json(path: Path, default: Any) -> Any:
@@ -132,13 +140,18 @@ async def run_task(req: RunRequest):
                 yield f"data: {json.dumps({'type': 'error', 'msg': f'路径不存在: {root}'})}\n\n"
                 return
 
-            # Parse times
-            mtime_range = file_modifier.parse_datetime(req.mtime) if req.mtime else None
-            atime_range = file_modifier.parse_datetime(req.atime) if req.atime else None
-            ctime_range = file_modifier.parse_datetime(req.ctime) if req.ctime else None
+            # Statistics & Logs
+            renamed_cnt = 0
+            ts_cnt = 0
+            task_logs = []
+
+            # Parse times (Only if requested)
+            mtime_range = file_modifier.parse_datetime(req.mtime) if (req.mod_mtime and req.mtime) else None
+            atime_range = file_modifier.parse_datetime(req.atime) if (req.mod_atime and req.atime) else None
+            ctime_range = file_modifier.parse_datetime(req.ctime) if (req.mod_ctime and req.ctime) else None
             
             # Regex
-            rename_pattern = req.rename_pattern if req.rename_pattern else None
+            rename_pattern = req.rename_pattern if (req.mod_name and req.rename_pattern) else None
             include_re = re.compile(req.include) if req.include else None
             exclude_re = re.compile(req.exclude) if req.exclude else None
             
@@ -156,7 +169,6 @@ async def run_task(req: RunRequest):
                 if exclude_re and exclude_re.search(name): return False
                 if include_exts and ext not in include_exts: return False
                 if exclude_exts and ext in exclude_exts: return False
-                # Ignore hidden files if set
                 if load_json(SETTINGS_FILE, Settings().model_dump()).get("ignore_hidden") and name.startswith('.'):
                     return False
                 return True
@@ -175,51 +187,55 @@ async def run_task(req: RunRequest):
                 old_name = file_path.name
                 try:
                     current_path = file_path
-                    rename_msg = ""
+                    rename_op = False
+                    ts_op = False
+                    
+                    # 1. Rename logic
                     if rename_pattern:
                         new_name = re.sub(rename_pattern, req.rename_replace, old_name)
                         if new_name != old_name:
                             new_path = file_path.parent / new_name
-                            rename_msg = f"重命名: {old_name} -> {new_name}"
                             if not req.dry_run:
                                 file_path.rename(new_path)
                             current_path = new_path
+                            renamed_cnt += 1
+                            rename_op = True
                     
+                    # 2. Timestamp logic
                     t_mtime = file_modifier.get_random_timestamp(mtime_range) if mtime_range else None
                     t_atime = file_modifier.get_random_timestamp(atime_range) if atime_range else None
                     t_ctime = file_modifier.get_random_timestamp(ctime_range) if ctime_range else None
                     
-                    ts_msg = ""
                     if any([t_mtime, t_atime, t_ctime]):
-                        ts_msg = "时间戳已更新"
                         if not req.dry_run:
                             file_modifier.set_timestamp(current_path, t_atime, t_mtime, t_ctime, False)
+                        ts_cnt += 1
+                        ts_op = True
                     
-                    progress_data = {
-                        'type': 'progress', 
-                        'current': i + 1, 
-                        'total': total,
-                        'file': old_name,
-                        'msg': f'处理成功: {rename_msg if rename_msg else "保持原名"} {ts_msg}'
-                    }
-                    yield f"data: {json.dumps(progress_data)}\n\n"
+                    log_entry = f"{datetime.now().strftime('%H:%M:%S')} - 处理: {old_name} | 重命名: {'YES' if rename_op else 'NO'} | 时间修改: {'YES' if ts_op else 'NO'}"
+                    task_logs.append(log_entry)
+                    
+                    # Only send summary data to dashboard to keep it clean
+                    yield f"data: {json.dumps({'type': 'progress', 'current': i + 1, 'total': total, 'renamed_cnt': renamed_cnt, 'ts_cnt': ts_cnt})}\n\n"
+                    
                 except Exception as e:
-                    yield f"data: {json.dumps({'type': 'warn', 'msg': f'处理阶段出错 {old_name}: {str(e)}'})}\n\n"
-                await asyncio.sleep(0.01)
+                    task_logs.append(f"{datetime.now().strftime('%H:%M:%S')} - 错误 {old_name}: {str(e)}")
+                await asyncio.sleep(0.001)
 
-            # Save to history
+            # Save to history with detailed logs
             history = load_json(HISTORY_FILE, [])
             history.insert(0, {
                 "id": int(time.time()),
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "path": req.path,
                 "config": req.model_dump(),
-                "total": total,
+                "summary": {"renamed": renamed_cnt, "ts_updated": ts_cnt, "total": total},
+                "logs": task_logs,
                 "status": "Success"
             })
-            save_json(HISTORY_FILE, history[:100])
+            save_json(HISTORY_FILE, history[:100]) # Cap at 100
 
-            yield f"data: {json.dumps({'type': 'done', 'msg': f'任务完成，共处理 {total} 个文件'})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'msg': f'任务完成，共重命名 {renamed_cnt} 个，修改时间 {ts_cnt} 个'})}\n\n"
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'msg': f'系统错误: {str(e)}'})}\n\n"
 

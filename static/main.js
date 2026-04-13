@@ -13,14 +13,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnPickFolder = document.getElementById('btn-pick-folder');
     const btnPickFile = document.getElementById('btn-pick-file');
     const btnStart = document.getElementById('btn-start');
-    const consoleOutput = document.getElementById('console-output');
     const progressVal = document.getElementById('progress-val');
     const statusSummary = document.getElementById('status-summary');
     const toggleBtns = document.querySelectorAll('.toggle-btn');
     
+    // Stats Elements
+    const statRenamed = document.getElementById('stat-renamed');
+    const statTs = document.getElementById('stat-ts');
+    const statTotal = document.getElementById('stat-total');
+
+    // Mod Toggles
+    const modNameCheck = document.getElementById('mod-name-check');
+    const modMtimeCheck = document.getElementById('mod-mtime-check');
+    const modAtimeCheck = document.getElementById('mod-atime-check');
+    const modCtimeCheck = document.getElementById('mod-ctime-check');
+    
     // History & Settings Elements
     const historyList = document.getElementById('history-list');
     const btnSaveSettings = document.getElementById('btn-save-settings');
+
+    // Modal Elements
+    const logModal = document.getElementById('log-modal');
+    const closeModal = document.getElementById('close-modal');
+    const modalLogContent = document.getElementById('modal-log-content');
 
     // --- Tab Switching ---
     navItems.forEach(item => {
@@ -38,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Initialize ---
-    loadSettings(true); // Load settings and apply defaults to Dashboard
+    loadSettings(true); 
 
     // --- Native Pickers ---
     btnPickFolder.onclick = async () => {
@@ -48,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedPath = data.path;
             selectedPathDisplay.textContent = selectedPath;
             selectedPathDisplay.classList.add('active');
-            addLog(`已选择文件夹: ${selectedPath}`, 'info');
         }
     };
 
@@ -59,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedPath = data.path;
             selectedPathDisplay.textContent = selectedPath;
             selectedPathDisplay.classList.add('active');
-            addLog(`已选择文件: ${selectedPath}`, 'info');
         }
     };
 
@@ -130,37 +143,69 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         historyData.forEach(item => {
             const tr = document.createElement('tr');
-            const shortPath = item.path.length > 40 ? '...' + item.path.slice(-37) : item.path;
+            const shortPath = item.path.length > 35 ? '...' + item.path.slice(-32) : item.path;
             const mode = item.config.dry_run ? '<span style="color:var(--warning)">预览</span>' : '<span style="color:var(--success)">执行</span>';
-            
+            const stats = item.summary ? `${item.summary.renamed} / ${item.summary.ts_updated} / ${item.summary.total}` : `${item.total}`;
+
             tr.innerHTML = `
                 <td>${item.time}</td>
                 <td title="${item.path}">${shortPath}</td>
                 <td>${mode}</td>
-                <td>${item.total}</td>
-                <td><button class="btn-mini btn-reuse" data-id="${item.id}">复用参数</button></td>
+                <td>${stats}</td>
+                <td>
+                    <button class="btn-mini btn-details" style="background:var(--accent-primary)">详情</button>
+                    <button class="btn-mini btn-reuse">复用</button>
+                </td>
             `;
             
             tr.querySelector('.btn-reuse').onclick = () => {
                 reuseParams(item.config);
-                navItems[0].click(); // Switch to dashboard
-                addLog('已从历史记录中恢复任务参数', 'info');
+                navItems[0].click(); 
+                statusSummary.textContent = '已从历史记录中恢复任务参数';
+            };
+
+            tr.querySelector('.btn-details').onclick = () => {
+                showLogModal(item.logs);
             };
             
             historyList.appendChild(tr);
         });
     }
 
+    function showLogModal(logs) {
+        modalLogContent.innerHTML = '';
+        if (!logs || logs.length === 0) {
+            modalLogContent.innerHTML = '<div style="color:var(--text-dim)">该任务暂无详细日志。</div>';
+        } else {
+            logs.forEach(log => {
+                const div = document.createElement('div');
+                div.className = 'log-line';
+                div.textContent = log;
+                modalLogContent.appendChild(div);
+            });
+        }
+        logModal.classList.add('active');
+    }
+
+    closeModal.onclick = () => logModal.classList.remove('active');
+    window.onclick = (e) => { if (e.target === logModal) logModal.classList.remove('active'); };
+
     function reuseParams(cfg) {
         selectedPath = cfg.path;
         selectedPathDisplay.textContent = selectedPath;
         document.getElementById('rename-pattern').value = cfg.rename_pattern || '';
         document.getElementById('rename-replace').value = cfg.rename_replace || '';
-        document.getElementById('mtime-start').value = cfg.mtime.split(',')[0] || '';
-        document.getElementById('mtime-end').value = cfg.mtime.split(',')[1] || '';
+        document.getElementById('mtime-start').value = cfg.mtime ? cfg.mtime.split(',')[0] : '2025-01-01';
+        document.getElementById('mtime-end').value = cfg.mtime ? cfg.mtime.split(',')[1] : '2025-12-31';
         document.getElementById('recursive-check').checked = cfg.recursive;
         document.getElementById('dry-run-check').checked = cfg.dry_run;
         
+        // Match new toggles
+        modNameCheck.checked = cfg.mod_name !== undefined ? cfg.mod_name : true;
+        modMtimeCheck.checked = cfg.mod_mtime !== undefined ? cfg.mod_mtime : true;
+        modAtimeCheck.checked = cfg.mod_atime !== undefined ? cfg.mod_atime : false;
+        modCtimeCheck.checked = cfg.mod_ctime !== undefined ? cfg.mod_ctime : false;
+
         if (cfg.include_exts) {
             document.getElementById('suffix-list').value = cfg.include_exts;
             toggleBtns[0].click();
@@ -173,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Task Execution ---
     async function startTask() {
         if (!selectedPath) {
-            addLog('请先选择目标文件夹或文件！', 'warn');
+            alert('请先选择目标路径！');
             return;
         }
 
@@ -181,6 +226,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const config = {
             path: selectedPath,
             recursive: document.getElementById('recursive-check').checked,
+            mod_name: modNameCheck.checked,
+            mod_mtime: modMtimeCheck.checked,
+            mod_atime: modAtimeCheck.checked,
+            mod_ctime: modCtimeCheck.checked,
             rename_pattern: document.getElementById('rename-pattern').value,
             rename_replace: document.getElementById('rename-replace').value,
             mtime: document.getElementById('mtime-start').value + ',' + document.getElementById('mtime-end').value,
@@ -190,11 +239,10 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         btnStart.disabled = true;
-        progressVal.textContent = '0%';
-        progressVal.style.background = 'radial-gradient(circle, rgba(142,45,226,0.1) 0%, transparent 70%)';
+        resetStats();
         
-        const modeLabel = isDryRun ? '【预览模式 - 不修改文件】' : '【正式执行 - 正在修改】';
-        addLog(`--- 任务开始 ${modeLabel} ---`, isDryRun ? 'warn' : 'info');
+        const modeLabel = isDryRun ? '【预览模式】' : '【正式执行】';
+        statusSummary.textContent = `任务启动中 ${modeLabel}...`;
 
         try {
             const response = await fetch('/api/run', {
@@ -223,43 +271,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         } catch (e) {
-            addLog(`请求失败: ${e.message}`, 'error');
+            statusSummary.textContent = `请求失败: ${e.message}`;
         } finally {
             btnStart.disabled = false;
         }
     }
 
+    function resetStats() {
+        statRenamed.textContent = '0';
+        statTs.textContent = '0';
+        statTotal.textContent = '0 / 0';
+        progressVal.textContent = '0%';
+        progressVal.style.background = 'radial-gradient(circle, rgba(142,45,226,0.1) 0%, transparent 70%)';
+    }
+
     function handleEvent(data) {
         switch (data.type) {
             case 'info':
-                addLog(data.msg, 'info');
                 statusSummary.textContent = data.msg;
                 break;
             case 'progress':
                 const percent = Math.round((data.current / data.total) * 100);
                 progressVal.textContent = `${percent}%`;
                 progressVal.style.background = `conic-gradient(var(--success) ${percent}%, transparent 0)`;
-                statusSummary.textContent = `(${data.current}/${data.total}) ${data.file}`;
-                addLog(data.msg, 'done');
+                statRenamed.textContent = data.renamed_cnt;
+                statTs.textContent = data.ts_cnt;
+                statTotal.textContent = `${data.current} / ${data.total}`;
                 break;
-            case 'warn': addLog(data.msg, 'warn'); break;
             case 'error':
-                addLog(data.msg, 'error');
-                statusSummary.textContent = '任务出错';
+                statusSummary.textContent = `错误: ${data.msg}`;
                 break;
             case 'done':
-                addLog(data.msg, 'info');
                 statusSummary.textContent = data.msg;
                 break;
         }
-    }
-
-    function addLog(msg, type) {
-        const div = document.createElement('div');
-        div.className = `log-item log-${type}`;
-        const time = new Date().toLocaleTimeString();
-        div.textContent = `[${time}] ${msg}`;
-        consoleOutput.appendChild(div);
-        consoleOutput.scrollTop = consoleOutput.scrollHeight;
     }
 });
