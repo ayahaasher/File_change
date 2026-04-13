@@ -195,6 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedPathDisplay.textContent = selectedPath;
         document.getElementById('rename-pattern').value = cfg.rename_pattern || '';
         document.getElementById('rename-replace').value = cfg.rename_replace || '';
+        document.getElementById('append-suffix').value = cfg.append_suffix || '';
         document.getElementById('mtime-start').value = cfg.mtime ? cfg.mtime.split(',')[0] : '2025-01-01';
         document.getElementById('mtime-end').value = cfg.mtime ? cfg.mtime.split(',')[1] : '2025-12-31';
         document.getElementById('recursive-check').checked = cfg.recursive;
@@ -232,6 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mod_ctime: modCtimeCheck.checked,
             rename_pattern: document.getElementById('rename-pattern').value,
             rename_replace: document.getElementById('rename-replace').value,
+            append_suffix: document.getElementById('append-suffix').value,
             mtime: document.getElementById('mtime-start').value + ',' + document.getElementById('mtime-end').value,
             dry_run: isDryRun,
             include_exts: filterMode === 'include' ? document.getElementById('suffix-list').value : '',

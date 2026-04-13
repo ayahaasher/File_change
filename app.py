@@ -44,6 +44,7 @@ class RunRequest(BaseModel):
     
     rename_pattern: Optional[str] = None
     rename_replace: str = ""
+    append_suffix: Optional[str] = None
     mtime: Optional[str] = None
     atime: Optional[str] = None
     ctime: Optional[str] = None
@@ -152,6 +153,7 @@ async def run_task(req: RunRequest):
             
             # Regex
             rename_pattern = req.rename_pattern if (req.mod_name and req.rename_pattern) else None
+            append_suffix = req.append_suffix if (req.mod_name and req.append_suffix) else None
             include_re = re.compile(req.include) if req.include else None
             exclude_re = re.compile(req.exclude) if req.exclude else None
             
@@ -198,6 +200,18 @@ async def run_task(req: RunRequest):
                             if not req.dry_run:
                                 file_path.rename(new_path)
                             current_path = new_path
+                            renamed_cnt += 1
+                            rename_op = True
+
+                    if append_suffix:
+                        current_path, append_status = file_modifier.append_suffix_to_file(
+                            current_path,
+                            append_suffix,
+                            req.dry_run,
+                        )
+                        if append_status == "conflict":
+                            raise ValueError(f"追加后缀冲突: {current_path.name}")
+                        if append_status == "appended":
                             renamed_cnt += 1
                             rename_op = True
                     
