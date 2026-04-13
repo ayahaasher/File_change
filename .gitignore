@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+.env
+data/
+history.json
+settings.json
+.superpowers/
+.claude/
+.gemini/
+.DS_Store

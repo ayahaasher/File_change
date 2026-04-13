@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Modifier Pro - Web Engine</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="nav-item active" data-tab="dashboard" title="Dashboard">🏠</div>
+        <div class="nav-item" data-tab="history" title="History">📜</div>
+        <div class="nav-item" data-tab="settings" title="Settings">⚙️</div>
+    </aside>
+
+    <main class="main-container">
+        <!-- 1. Dashboard Tab -->
+        <section id="tab-dashboard" class="tab-content active">
+            <section class="content-left">
+                <h1>File Modifier <span class="badge">PRO v2.5</span></h1>
+                
+                <!-- Native Path Selector -->
+                <div class="glass-card">
+                    <div class="card-title">📂 资源路径选择 (Resource Path)</div>
+                    <div class="current-path-bar" id="selected-path-display">
+                        未选择任何路径
+                    </div>
+                    <div class="picker-actions">
+                        <button class="btn-picker" id="btn-pick-folder">📁 选择处理文件夹</button>
+                        <button class="btn-picker" id="btn-pick-file">📄 选择单个文件</button>
+                    </div>
+                </div>
+
+                <!-- Config Cards -->
+                <div class="glass-card">
+                    <div class="card-title">🔍 处理规则配置</div>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>重命名正则</label>
+                            <input type="text" id="rename-pattern" placeholder="例如: ^12313--">
+                        </div>
+                        <div class="input-group">
+                            <label>替换文本</label>
+                            <input type="text" id="rename-replace" placeholder="留空则为删除">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <div class="card-title">📅 时间随机化区间</div>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>起始日期</label>
+                            <input type="text" id="mtime-start" value="2025-01-01">
+                        </div>
+                        <div class="input-group">
+                            <label>结束日期</label>
+                            <input type="text" id="mtime-end" value="2025-12-31">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <div class="card-title">🎯 后缀名过滤器</div>
+                    <div class="filter-header">
+                        <div class="toggle-group">
+                            <button class="toggle-btn active" data-mode="include">包含</button>
+                            <button class="toggle-btn" data-mode="exclude">排除</button>
+                        </div>
+                    </div>
+                    <input type="text" id="suffix-list" placeholder="例如: doc, docx, pdf">
+                    
+                    <div class="checkbox-group" style="margin-top: 15px;">
+                        <div>
+                            <input type="checkbox" id="recursive-check" checked>
+                            <label for="recursive-check">递归子目录</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" id="dry-run-check" checked>
+                            <label for="dry-run-check">预览模式 (Dry Run)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-primary" id="btn-start">开始处理任务 🚀</button>
+            </section>
+
+            <aside class="side-panel">
+                <div class="glass-card status-card">
+                    <div class="card-title" style="justify-content: center;">实时监控</div>
+                    <div class="progress-container">
+                        <div class="progress-circle" id="progress-val">0%</div>
+                    </div>
+                    <div class="status-text" id="status-summary">等待任务开始...</div>
+                </div>
+
+                <div class="console" id="console-output">
+                    <div class="log-item log-info">控制台就绪。请选择路径并配置规则。</div>
+                </div>
+            </aside>
+        </section>
+
+        <!-- 2. History Tab -->
+        <section id="tab-history" class="tab-content">
+            <h1>任务历史 (History)</h1>
+            <div class="glass-card" style="margin-top: 20px;">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>执行时间</th>
+                            <th>路径</th>
+                            <th>模式</th>
+                            <th>文件数</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-list">
+                        <!-- History items will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 3. Settings Tab -->
+        <section id="tab-settings" class="tab-content">
+            <h1>全局设置 (Settings)</h1>
+            <div class="glass-card" style="margin-top: 20px; max-width: 600px;">
+                <div class="input-group">
+                    <label>默认包含后缀名 (逗号分隔)</label>
+                    <input type="text" id="set-default-suffixes">
+                </div>
+                <div class="input-group" style="margin-top: 20px;">
+                    <label>默认行为控制</label>
+                    <div class="checkbox-group" style="flex-direction: column; align-items: flex-start;">
+                        <div style="margin-bottom: 10px;">
+                            <input type="checkbox" id="set-recursive-default">
+                            <label for="set-recursive-default">默认开启递归处理</label>
+                        </div>
+                        <div style="margin-bottom: 10px;">
+                            <input type="checkbox" id="set-dryrun-default">
+                            <label for="set-dryrun-default">默认开启预览(安全)模式</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" id="set-ignore-hidden">
+                            <label for="set-ignore-hidden">自动忽略系统隐藏文件 (.DS_Store等)</label>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-primary" id="btn-save-settings" style="margin-top: 30px;">保存系统配置 💾</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/main.js"></script>
+</body>
+</html>
